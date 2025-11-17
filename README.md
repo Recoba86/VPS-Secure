@@ -30,10 +30,17 @@ sudo ./secure-ssh.sh
 - ✅ نصب و پیکربندی `fail2ban` برای محافظت در برابر حملات brute-force
 - ✅ بکاپ خودکار از فایل کانفیگ SSH
 - ✅ تنظیم fail2ban با محدودیت 3 تلاش ناموفق در 10 دقیقه (بن به مدت 1 ساعت)
+- ✅ پاک کردن تمام قوانین فایروال (iptables)
+- ✅ حذف netfilter-persistent
+- ✅ ریبوت خودکار سرور بعد از اتمام تنظیمات
 
 ## هشدارها مهم
 
 ⚠️ **قبل از قطع اتصال SSH فعلی، حتماً با پورت جدید (10808) تست کنید!**
+
+⚠️ **سرور بعد از اتمام اسکریپت به صورت خودکار ریبوت می‌شود!**
+
+⚠️ **بعد از ریبوت، باید با پورت 10808 و یوزر ubuntu وارد شوید.**
 
 پس از اجرای اسکریپت:
 - پورت جدید: `10808`
@@ -86,10 +93,17 @@ sudo ./secure-ssh.sh
 - Enables password authentication
 - Restricts SSH access to `ubuntu` user only
 - Installs and configures `fail2ban` for brute-force protection
+- Cleans up firewall rules (iptables)
+- Removes netfilter-persistent
+- Automatically reboots the server after completion
 
 ## Important Warnings
 
 ⚠️ **Test the new port (10808) before closing your current SSH session!**
+
+⚠️ **The server will automatically reboot after the script completes!**
+
+⚠️ **After reboot, you must connect using port 10808 and user ubuntu.**
 
 Connection example:
 ```bash
