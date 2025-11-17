@@ -116,9 +116,6 @@ apt-get purge -y netfilter-persistent 2>/dev/null || true
 rm -rf /etc/iptables
 
 echo
-echo "[+] سرور در حال ریبوت است..."
-echo "[!] بعد از ریبوت، با پورت 10808 و یوزر ubuntu وارد شوید."
+echo "[+] پاک‌سازی فایروال انجام شد."
+echo "[!] توجه: اسکریپت سرور را ریبوت نمی‌کند؛ در صورت نیاز خودتان ریبوت کنید."
 echo
-
-sleep 3
-reboot
