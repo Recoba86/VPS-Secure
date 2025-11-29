@@ -9,10 +9,16 @@ fi
 
 echo "[-] Setting new password for ubuntu user"
 
-read -s -p "New password for ubuntu: " UBUNTU_PASS
+# Read from /dev/tty to handle piped execution (curl | bash)
+read -s -p "New password for ubuntu: " UBUNTU_PASS < /dev/tty
 echo
-read -s -p "Confirm password: " UBUNTU_PASS2
+read -s -p "Confirm password: " UBUNTU_PASS2 < /dev/tty
 echo
+
+if [ -z "$UBUNTU_PASS" ]; then
+  echo "[!] Password cannot be empty. Script aborted."
+  exit 1
+fi
 
 if [ "$UBUNTU_PASS" != "$UBUNTU_PASS2" ]; then
   echo "[!] Passwords do not match. Script aborted."
