@@ -1,33 +1,33 @@
 #!/bin/bash
 set -e
 
-# این اسکریپت باید با روت اجرا بشه
+# This script must be run as root
 if [ "$EUID" -ne 0 ]; then
-  echo "لطفا اسکریپت را با sudo یا به عنوان root اجرا کن."
+  echo "Please run this script with sudo or as root."
   exit 1
 fi
 
-echo "[-] ست کردن پسورد جدید برای یوزر ubuntu"
+echo "[-] Setting new password for ubuntu user"
 
-read -s -p "پسورد جدید برای ubuntu: " UBUNTU_PASS
+read -s -p "New password for ubuntu: " UBUNTU_PASS
 echo
-read -s -p "تکرار پسورد: " UBUNTU_PASS2
+read -s -p "Confirm password: " UBUNTU_PASS2
 echo
 
 if [ "$UBUNTU_PASS" != "$UBUNTU_PASS2" ]; then
-  echo "[!] پسوردها یکی نیستن. اسکریپت متوقف شد."
+  echo "[!] Passwords do not match. Script aborted."
   exit 1
 fi
 
 echo "ubuntu:$UBUNTU_PASS" | chpasswd
-echo "[+] پسورد ubuntu با موفقیت ست شد."
+echo "[+] Password for ubuntu successfully set."
 
 SSHD_CONF="/etc/ssh/sshd_config"
 
-echo "[-] بکاپ گرفتن از فایل sshd_config"
+echo "[-] Backing up sshd_config file"
 cp "$SSHD_CONF" "${SSHD_CONF}.$(date +%F-%H%M%S).bak"
 
-echo "[-] تنظیم پورت SSH روی 10808"
+echo "[-] Setting SSH port to 10808"
 
 if grep -qE '^Port ' "$SSHD_CONF"; then
   sed -i 's/^Port .*/Port 10808/' "$SSHD_CONF"
@@ -37,7 +37,7 @@ else
   echo 'Port 10808' >> "$SSHD_CONF"
 fi
 
-echo "[-] بستن لاگین با root"
+echo "[-] Disabling root login"
 
 if grep -qE '^PermitRootLogin ' "$SSHD_CONF"; then
   sed -i 's/^PermitRootLogin .*/PermitRootLogin no/' "$SSHD_CONF"
@@ -45,7 +45,7 @@ else
   echo 'PermitRootLogin no' >> "$SSHD_CONF"
 fi
 
-echo "[-] فعال کردن لاگین با پسورد و غیرفعال کردن کی"
+echo "[-] Enabling password authentication and disabling key authentication"
 if grep -qE '^PasswordAuthentication ' "$SSHD_CONF"; then
   sed -i 's/^PasswordAuthentication .*/PasswordAuthentication yes/' "$SSHD_CONF"
 else
@@ -58,7 +58,7 @@ else
   echo 'PubkeyAuthentication no' >> "$SSHD_CONF"
 fi
 
-echo "[-] محدود کردن ssh فقط برای ubuntu"
+echo "[-] Restricting SSH access to ubuntu user only"
 
 if grep -qE '^AllowUsers ' "$SSHD_CONF"; then
   sed -i 's/^AllowUsers .*/AllowUsers ubuntu/' "$SSHD_CONF"
@@ -66,12 +66,12 @@ else
   echo 'AllowUsers ubuntu' >> "$SSHD_CONF"
 fi
 
-echo "[-] نصب fail2ban"
+echo "[-] Installing fail2ban"
 
 apt update -y
 apt install -y fail2ban
 
-echo "[-] تنظیم fail2ban برای ssh روی پورت 10808"
+echo "[-] Configuring fail2ban for SSH on port 10808"
 
 mkdir -p /etc/fail2ban/jail.d
 
@@ -86,36 +86,45 @@ bantime = 1h
 findtime = 10m
 EOF
 
-echo "[-] چک کردن کانفیگ sshd"
+echo "[-] Checking sshd configuration"
 
 sshd -t
 
-echo "[-] ریستارت sshd و fail2ban"
+echo "[-] Restarting sshd and fail2ban"
 
-systemctl restart sshd
+# On Ubuntu/Debian the service is named ssh, on RHEL/CentOS it's sshd
+if systemctl list-units --type=service | grep -q 'ssh.service'; then
+  systemctl restart ssh
+elif systemctl list-units --type=service | grep -q 'sshd.service'; then
+  systemctl restart sshd
+else
+  echo "[!] SSH service not found!"
+  exit 1
+fi
+
 systemctl restart fail2ban
 
 echo
-echo "[+] همه چیز انجام شد."
-echo "[+] از این به بعد برای ssh از این تنظیمات استفاده کن:"
-echo "    یوزر: ubuntu"
-echo "    پورت: 10808"
-echo "    احراز هویت: پسورد"
+echo "[+] All done."
+echo "[+] From now on, use these SSH settings:"
+echo "    User: ubuntu"
+echo "    Port: 10808"
+echo "    Authentication: password"
 echo
-echo "[!] تا وقتی با پورت جدید تست نکردی، سشن فعلی‌ات رو نبند."
+echo "[!] Do not close your current session until you test the new port."
 
-echo "[-] پاک کردن قوانین فایروال iptables"
+echo "[-] Clearing iptables firewall rules"
 
 iptables -P INPUT ACCEPT
 iptables -P FORWARD ACCEPT
 iptables -F
 
-echo "[-] حذف netfilter-persistent"
+echo "[-] Removing netfilter-persistent"
 
 apt-get purge -y netfilter-persistent 2>/dev/null || true
 rm -rf /etc/iptables
 
 echo
-echo "[+] پاک‌سازی فایروال انجام شد."
-echo "[!] توجه: اسکریپت سرور را ریبوت نمی‌کند؛ در صورت نیاز خودتان ریبوت کنید."
+echo "[+] Firewall cleanup completed."
+echo "[!] Note: This script does not reboot the server; reboot manually if needed."
 echo
