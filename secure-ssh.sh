@@ -64,6 +64,13 @@ else
   echo 'PubkeyAuthentication no' >> "$SSHD_CONF"
 fi
 
+echo "[-] Removing sshd_config.d overrides (Ubuntu 22.04+/cloud-init)"
+# Ubuntu 22.04+ and cloud-init may override settings in sshd_config.d
+if [ -d /etc/ssh/sshd_config.d ]; then
+  rm -f /etc/ssh/sshd_config.d/*.conf
+  echo "[+] Cleared /etc/ssh/sshd_config.d/"
+fi
+
 echo "[-] Restricting SSH access to ubuntu user only"
 
 if grep -qE '^AllowUsers ' "$SSHD_CONF"; then
